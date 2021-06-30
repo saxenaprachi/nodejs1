@@ -1,9 +1,18 @@
+require("dotenv").config();
+
 //Framework
 const express = require("express");
 
 //database
 const database = require("./database/index");
-
+const mongoose= require("mongoose");
+//connect to data base
+mongoose.connect(process.env.MONGO_URL,{
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+  useCreateIndex: true
+}).then(()=>console.log("DB connection established!!"));
 
 //intiallizing express
  const BookTab = express();
@@ -287,6 +296,9 @@ BookTab.delete("/author/delete/:id", (req, res)=>{
 ///////////////////////////////////PUBLICATIONS DATABASE MANIPULATION/////////////////////////////////////////////////////////////
 
 
+
+                       ///////////////////////////GET////////////////////////////////////////////
+
 /*
 Route           /publications
 Description     get all publications
@@ -329,7 +341,11 @@ BookTab.get("/publications/books/:book", (req, res)=>{
     return res.json({error: `No publiication with a book ${book} found`});
   }
   return res.json({publication: getSpecificPublications});
+
 });
+                       ///////////////////////////POST////////////////////////////////////////////
+
+                       ///////////////////////////PUT////////////////////////////////////////////
 /*
 Route           /publications/update/book
 Description     update publication databse
@@ -359,5 +375,9 @@ return res.json({books: database.books,
   message: "New book was added in publication",});
 
 });
+
+                       ///////////////////////////DELETE////////////////////////////////////////////
+
+
 
  BookTab.listen(3000, ()=> console.log("Server Running!!"));
