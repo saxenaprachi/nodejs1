@@ -6,6 +6,13 @@ const express = require("express");
 //database
 const database = require("./database/index");
 const mongoose= require("mongoose");
+
+//models
+
+const BookModels = require("./database/books");
+const AuthorModels = require("./database/author");
+const PublicationModels = require("./database/publication");
+
 //connect to data base
 mongoose.connect(process.env.MONGO_URL,{
   useNewUrlParser: true,
