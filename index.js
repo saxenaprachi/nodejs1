@@ -9,9 +9,9 @@ const mongoose= require("mongoose");
 
 //models
 
-const BookModels = require("./database/books");
-const AuthorModels = require("./database/author");
-const PublicationModels = require("./database/publication");
+const BookModel = require("./database/books");
+const AuthorModel = require("./database/author");
+const PublicationModel = require("./database/publication");
 
 //connect to data base
 mongoose.connect(process.env.MONGO_URL,{
@@ -41,8 +41,8 @@ Access          PUBLIC
 Parameters      NONE
 Method          GET
 */
-BookTab.get("/", (req, res) => {
-   return res.json({ books: database.books });
+BookTab.get("/", async(req, res) => {
+   return res.json({ books: await BookModel.find() });
  });
 
 
@@ -53,11 +53,10 @@ Access          PUBLIC
 Parameters      /:isbn
 Method          GET
 */
- BookTab.get("/isbn/:isbn", (req, res)=>{
-    const getSpecificBook = database.books.filter((book)=>  book.id === req.params.isbn);
-
-    if(getSpecificBook==0){
-        return res.json({error : "Error"});
+ BookTab.get("/isbn/:id", async(req, res)=>{
+    const getSpecificBook = await BookModel.findOne({id: req.params.id});
+    if(!getSpecificBook){
+        return res.json({error : "NO book for following data"});
     };
     return res.json({book: getSpecificBook});
    });
@@ -69,13 +68,12 @@ Access          PUBLIC
 Parameters      /:category
 Method          GET
 */
- BookTab.get("/c/:category", (req, res)=>{
-    const getSpecificBook = database.books.filter((book)=>  book.category.includes(req.params.category) );
-
-    if(getSpecificBook==0){
-        return res.json({error : "Error"});
-    };
-    return res.json({book: getSpecificBook});
+ BookTab.get("/c/:category", async(req, res)=>{
+  const getSpecificBook = await BookModel.find({category: req.params.category});
+  if(!getSpecificBook){
+      return res.json({error : "NO book for following data"});
+  };
+  return res.json({book: getSpecificBook});
    });
  /*
 Route           /a
@@ -84,13 +82,12 @@ Access          PUBLIC
 Parameters      /:author
 Method          GET
 */
- BookTab.get("/a/:author", (req, res)=>{
-    const getSpecificBook = database.books.filter((book)=>  book.author.includes(req.params.author) );
-
-    if(getSpecificBook==0){
-        return res.json({error : "Error"});
-    };
-    return res.json({book: getSpecificBook});
+ BookTab.get("/a/:author", async(req, res)=>{
+  const getSpecificBook = await BookModel.find({author: req.params.author});
+  if(!getSpecificBook){
+      return res.json({error : "NO book for following data"});
+  };
+  return res.json({book: getSpecificBook});
    });
    
                           ///////////////////////////POST////////////////////////////////////////////
@@ -101,11 +98,11 @@ Access          PUBLIC
 Parameters      none
 Method          Post
 */
-BookTab.post("/book/new", (req, res)=>{
+BookTab.post("/book/new", async(req, res)=>{
   //req-body
  const {newBook}=  req.body;
- database.books.push(newBook);
- return res.json({book:database.books, message: "book was added"});
+ const addNewBook= await BookModel.create(newBook);
+ return res.json({book:addNewBook, message: "book was added"});
 
 });
 
@@ -212,8 +209,8 @@ Parameters      NONE
 Method          GET  
 */
 
-BookTab.get("/author", (req, res)=>{
-  return res.json({author: database.authors});
+BookTab.get("/author", async(req, res)=>{
+  return res.json({author: await AuthorModel.find()});
 });
 /*
 Route           /author
@@ -222,14 +219,12 @@ access          PUBLIC
 Parameters      :authorid
 Method          GET  
 */
-BookTab.get("/author/:id", (req, res)=>{
-  const getSpecificAuthor = database.authors.filter((author)=> author.id === req.params.id);
-
-  if(getSpecificAuthor.length ==0){
-    return res.json({error:`no Author with Id ${req.params.id} found`});
-  }
-
-  return res.json({author: getSpecificAuthor});
+BookTab.get("/author/:id", async(req, res)=>{
+  const getSpecificBook = await AuthorModel.findOne({id: req.params.id});
+  if(!getSpecificBook){
+      return res.json({error : "NO book for following data"});
+  };
+  return res.json({book: getSpecificBook});
 });
 
 /*
@@ -240,14 +235,12 @@ Parameters      :book
 Method          GET  
 */
 
-BookTab.get("/author/book/:book", (req, res)=>{
-  const getSpecificAuthors = database.authors.filter((author)=> author.book.includes(req.params.book));
-
-  if(getSpecificAuthors.length==0){
-    return res.json({error : `no author for book ${book} ID found`});
-  }
-
-  return res.json({author: getSpecificAuthors});
+BookTab.get("/author/book/:book", async(req, res)=>{
+  const getSpecificBook = await AuthorModel.find({book: req.params.book});
+  if(!getSpecificBook){
+      return res.json({error : "NO book for following data"});
+  };
+  return res.json({book: getSpecificBook});
 });
 
 
@@ -259,11 +252,11 @@ Access          PUBLIC
 Parameters      none
 Method          Post
 */
-BookTab.post("/authors/new", (req, res)=>{
+BookTab.post("/authors/new", async (req, res)=>{
   //req-body
  const {newAuthor}=  req.body;
- database.authors.push(newAuthor);
- return res.json({book:database.authors, message: "author was added"});
+ const addNewAuthor = await AuthorModel.create(newAuthor);
+ return res.json({author:newAuthor, message: "author was added"});
 
 });
 
@@ -313,8 +306,8 @@ access          PUBLIC
 Parameters      NONE
 Method          GET  
 */
-BookTab.get("/publications", (req, res)=>{
-  return res.json({publication: database.publications});
+BookTab.get("/publications", async(req, res)=>{
+  return res.json({publication: await PublicationModel.find()});
 });
 
 /*
@@ -325,10 +318,10 @@ Parameters      /:id
 Method          GET  
 */
 
-BookTab.get("/publications/:id", (req, res)=>{
-  const getSpecificPublication = database.publications.filter((publication)=> publication.id === req.params.id);
+BookTab.get("/publications/:id", async(req, res)=>{
+  const getSpecificPublication = await PublicationModel.findOne({id: req.params.id});
 
-  if(getSpecificPublication.length== 0){
+  if(!getSpecificPublication){
     return res.json({error: `No publication with the id ${id} found`});
   }
 
@@ -342,15 +335,27 @@ access          PUBLIC
 Parameters      /:book
 Method          GET  
 */
-BookTab.get("/publications/books/:book", (req, res)=>{
-  const getSpecificPublications = database.publications.filter((publication)=> publication.book.includes(req.params.book));
-  if(getSpecificPublications.length ==0){
+BookTab.get("/publications/books/:book", async(req, res)=>{
+  const getSpecificPublications = await PublicationModel.find({book: req.params.book});
+  if(!getSpecificPublications){
     return res.json({error: `No publiication with a book ${book} found`});
   }
   return res.json({publication: getSpecificPublications});
 
 });
                        ///////////////////////////POST////////////////////////////////////////////
+/*
+Route           /publications/new
+Description     add new publication 
+access          PUBLIC
+Parameters      NONE
+Method          POST
+*/
+BookTab.post("/publications/new", async(req, res)=>{
+  const newPublication = req.body.newPublication;
+  const addNewPublication= await PublicationModel.create(newPublication);
+  return res.json({publication: addNewPublication});
+});
 
                        ///////////////////////////PUT////////////////////////////////////////////
 /*
