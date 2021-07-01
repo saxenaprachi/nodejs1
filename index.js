@@ -116,15 +116,14 @@ Parameters      :id
 Method          PUT
 */
 
-BookTab.put("/book/update/:id", (req, res)=>{
-  database.books.forEach((book)=>{
-    if(book.id== req.params.id){
-      book.name = req.body.bookTitle;
-      return res.json({book:database.books, message: "Book name updated"});
-    }
-    return;
-  })
+BookTab.put("/book/update/:id", async(req, res)=>{
 
+  const updatedBook = await BookModel.findOneAndUpdate({id: req.params.id}, 
+  {name: req.body.title},
+  {new: true}
+  );
+
+      return res.json({book: updatedBook, message: "Book name updated"});
 });
 /*
 Route           /book/author/update
@@ -134,20 +133,21 @@ Parameters      :id
 Method          PUT
 */
 
-BookTab.put("/book/author/update/:id", (req, res)=>{
-  database.books.forEach((book)=>{
-    if(book.id== req.params.id){
-     return book.author.push(req.body.authorID);
-    }
-  })
-  database.authors.forEach((author)=>{
-    if(author.id===req.body.authorID){
-      return author.book.push(req.params.id);
-    }
-    return res.json({books: database.books,
-      authors: database.authors,
-      message: "New author was added ",});
-  })
+BookTab.put("/book/author/update/:id", async(req, res)=>{
+
+  const updatedBook = await BookModel.findOneAndUpdate({id: req.params.id}, 
+    {$addToSet: {author: req.body.authorID,}},
+    {new: true}
+    );
+
+  const updatedAuthor= await AuthorModel.findOneAndUpdate({id: req.body.authorID},
+    {$addToSet: {book: req.params.id,}},
+    {new:true}
+    );
+    return res.json({books: updatedBook,
+      authors: updatedAuthor,
+      message: "New author was added ",}
+      );
 });
 
 
@@ -159,10 +159,11 @@ Access          PUBLIC
 Parameters      :id
 Method          DELETE
 */
-BookTab.delete("/book/:id", (req, res)=>{
-  const newBooks = database.books.filter((book)=> book.id!==req.params.id);
-  database.books = newBooks;
-  return res.json({book:database.books, message:`book with id ${req.params.id} deleted`});
+BookTab.delete("/book/:id", async(req, res)=>{
+
+  const deletedBook = await BookModel.findOneAndDelete({id: req.params.id});
+
+  return res.json({book:deletedBook, message:`book with id ${req.params.id} deleted`});
 });
 
 /*
@@ -173,24 +174,19 @@ Parameters      :id    // book
 Method          DELETE
 */
 
-BookTab.delete("/book/author/:id", (req, res)=>{
-  database.books.forEach((book)=> {
-    //update book database
-  if(book.id===req.params.id)
-  {
-    book.author = book.author.filter((author)=>author!== req.body.authorID);
-    
-  }
-  });
+BookTab.delete("/book/author/:id", async(req, res)=>{
 
-    //update author database
-  database.authors.forEach((author)=>{
-    if(author.id === req.body.authorID){
-      author.book = author.book.filter((book)=> book!==req.params.id);
-    }
-  });
-  return res.json({book: database.books, message:`author removed from book with id ${req.params.id}`, 
-    author: database.authors, message:`book removed from author with id ${req.body.authorID}`})
+  const updatedBook = await BookModel.findOneAndUpdate({id: req.params.id},
+    {$pull:{author: req.body.authorID}},
+    {new: true});
+
+  const updatedAuthor = await AuthorModel.findOneAndUpdate({id:req.body.authorID},
+    {$pull:{book: req.params.id}
+    },
+    {new: true});
+
+  return res.json({book: updatedBook, message:`author removed from book with id ${req.params.id}`, 
+    author: updatedAuthor, message:`book removed from author with id ${req.body.authorID}`})
 
 });
 
@@ -268,13 +264,12 @@ Access          PUBLIC
 Parameters      id
 Method          PUT
 */
-BookTab.put("/author/update/:id", (req,res)=>{
-  database.authors.forEach((author)=>{
-    if(author.id===req.params.id){
-      author.name = req.body.authorName;
-      return res.json({author: database.authors, message:"Author name updated"});
-    }
-  })
+BookTab.put("/author/update/:id", async(req,res)=>{
+
+  const updatedAuthor = await AuthorModel.findOneAndUpdate({id: req.params.id},
+    {name: req.body.authorName},
+    {new: true});
+      return res.json({author: updatedAuthor, message:"Author name updated"});
 });
 
                        ///////////////////////////DELETE////////////////////////////////////////////
@@ -285,9 +280,9 @@ Access          PUBLIC
 Parameters      id
 Method          DELETE
 */
-BookTab.delete("/author/delete/:id", (req, res)=>{
-  database.authors= database.authors.filter((author)=>author.id!==req.params.id);
-  return res.json({author:database.authors, message:"Author deleted"});
+BookTab.delete("/author/delete/:id", async(req, res)=>{
+  const deletedAuthor = await AuthorModel.findOneAndDelete({id: req.params.id});
+  return res.json({author: deletedAuthor, message:"Author deleted"});
 });
 
 
@@ -359,37 +354,87 @@ BookTab.post("/publications/new", async(req, res)=>{
 
                        ///////////////////////////PUT////////////////////////////////////////////
 /*
-Route           /publications/update/book
-Description     update publication databse
+Route           /publications/update/
+Description     update publication name
 access          PUBLIC
 Parameters      /:id
 Method          PUT 
 */
-BookTab.put("/publications/update/book/:id", (req, res)=>{
+
+BookTab.put("/publications/update/:id", async(req, res)=>{
+  const updatedPublication = await PublicationModel.findOneAndUpdate({id: req.params.id},
+    {name: req.body.publicationName},
+    {new: true});
+    return res.json({publication:updatedPublication, meassage: "name updated"});
+});
+
+
+/*
+Route           /publications/update/book
+Description     update publication book
+access          PUBLIC
+Parameters      /:id
+Method          PUT 
+*/
+BookTab.put("/publications/update/book/:id", async(req, res)=>{
 //update publicatons data
 
-database.publications.forEach((publication)=>{
-   if(publication.id === req.body.pubID){
-     return publication.book.push(req.params.id);
-   };
-});
+const updatedPublication= await PublicationModel.findOneAndUpdate(
+  {id: req.params.id},
+  {$addToSet: {
+    book: req.body.bookID
+  }},
+  {new : true});
 
 //update book data
 
-database.books.forEach((book)=>{
-  if(book.id=== req.params.id){
-    return book.publication.push(req.body.pubID);
-  }
-});
+const updatedBook= await BookModel.findOneAndUpdate({id: req.body.bookID},
+  {$addToSet:{
+    publication: req.params.id
+  }},
+  {new: true});
 
-return res.json({books: database.books,
-  publications: database.publications,
-  message: "New book was added in publication",});
+  return res.json({book: updatedBook, publication: updatedPublication});
 
 });
 
                        ///////////////////////////DELETE////////////////////////////////////////////
 
+/*
+Route           /publications/delete
+Description     delete publication databse
+access          PUBLIC
+Parameters      /:id
+Method          PUT 
+*/
+BookTab.delete("/publications/delete/:id", async(req, res)=>{
+  const deletedPublication = await PublicationModel.findOneAndDelete({id: req.params.id});
+  return res.json({publication: deletedPublication});
+})
+/*
+Route           /publications/book/delete
+Description     delete publication databse
+access          PUBLIC
+Parameters      /:id
+Method          PUT 
+*/
+BookTab.delete("/publications/book/delete/:id", async(req, res)=>{
+  const updatedPublication = await PublicationModel.findOneAndUpdate({id: req.body.publicationID},
+    {$pull:{
+      book: req.params.id
+    }},
+    {new: true}
+    );
 
+    const updatedBook = await BookModel.findOneAndUpdate({id: req.params.id},
+      {
+        $pull:{
+          publication: req.body.publicationID
+        }
+      },
+      {new: true});
+
+      return res.json({book: updatedBook, publication: updatedPublication});
+});
 
  BookTab.listen(3000, ()=> console.log("Server Running!!"));
